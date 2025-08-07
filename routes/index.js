@@ -28,10 +28,25 @@ router.get('/', function (req, res, next) {
     });
 });
 
-router.post('/', function (req, res, next) {
+/*router.post('/', function (req, res, next) {
   const todo = req.body.add;
   knex("tasks")
     .insert({user_id: 1, content: todo})
+    .then(function () {
+      res.redirect('/')
+    })
+    .catch(function (err) {
+      console.error(err);
+      res.render('index', {
+        title: 'ToDo App',
+      });
+    });
+});*/
+router.post('/', function (req, res, next) {
+  const todo = req.body.add;
+  const date = req.body.date; // 追加
+  knex("tasks")
+    .insert({user_id: 1, content: todo, date: date}) // dateも保存
     .then(function () {
       res.redirect('/')
     })

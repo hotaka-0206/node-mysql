@@ -1,3 +1,4 @@
+<!--
 <!DOCTYPE html>
 <html>
   <head>
@@ -15,5 +16,204 @@
       <li><span><%= todo.content %></span></li>
     <% } %>
   </ul>
+  </body>
+</html>
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <style>
+      body {
+        font-family: 'Segoe UI', 'Arial', sans-serif;
+        background: #f7f7f7;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 32px 24px;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 24px;
+      }
+      form {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        justify-content: center;
+      }
+      input[type="text"], input[type="date"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1em;
+      }
+      input[type="submit"] {
+        background: #0078d4;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background 0.2s;
+      }
+      input[type="submit"]:hover {
+        background: #005fa3;
+      }
+      .calendar-header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .calendar-header button {
+        background: #0078d4;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 12px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background 0.2s;
+      }
+      .calendar-header button:hover {
+        background: #005fa3;
+      }
+      .calendar-header span {
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #0078d4;
+      }
+      .calendar {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 auto;
+      }
+      .calendar th, .calendar td {
+        border: 1px solid #e0e0e0;
+        width: 14.2%;
+        height: 80px;
+        vertical-align: top;
+        padding: 6px;
+        background: #f9fbfc;
+        position: relative;
+      }
+      .calendar th {
+        background: #e6f0fa;
+        color: #0078d4;
+        font-weight: bold;
+        text-align: center;
+      }
+      .task-item {
+        background: #e3f2fd;
+        color: #222;
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin: 2px 0;
+        font-size: 0.95em;
+        display: block;
+        word-break: break-all;
+      }
+      .today {
+        border: 2px solid #0078d4;
+        background: #fffde7;
+      }
+    </style>
+    <script>
+      // カレンダー生成用関数（各日付セルにタスクのみ表示）
+      function getCalendar(year, month, todos) {
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const today = new Date();
+        let html = '<table class="calendar"><thead><tr>';
+        const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+        for (let wd of weekDays) html += `<th>${wd}</th>`;
+        html += '</tr></thead><tbody><tr>';
+        for (let i = 0; i < firstDay.getDay(); i++) html += '<td></td>';
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+          html += `<td${isToday ? ' class="today"' : ''}><div>${d}</div>`;
+          // タスク表示のみ
+          if (todos[dateStr]) {
+            for (let t of todos[dateStr]) {
+              html += `<span class="task-item">${t}</span>`;
+            }
+          }
+          html += '</td>';
+          if ((firstDay.getDay() + d) % 7 === 0 && d !== lastDay.getDate()) html += '</tr><tr>';
+        }
+        const remain = (firstDay.getDay() + lastDay.getDate()) % 7;
+        if (remain !== 0) for (let i = remain; i < 7; i++) html += '<td></td>';
+        html += '</tr></tbody></table>';
+        return html;
+      }
+      // 月名取得
+      function getMonthLabel(year, month) {
+        return `${year}年 ${month + 1}月`;
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1><%= title %></h1>
+      <!-- 入力欄は一つだけ -->
+      <form action="/" method="post">
+        <input required type="text" name="add" placeholder="タスク内容を入力"/>
+        <input type="date" name="date" required />
+        <input type="submit" value="追加"/>
+      </form>
+      <div class="calendar-header">
+        <button id="prevMonth" type="button">前月</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth" type="button">次月</button>
+      </div>
+      <div id="calendar"></div>
+      <script>
+        // サーバーから渡されたtodosを日付ごとにまとめる
+        const todos = {};
+        <% for(let todo of todos){ %>
+          if (!todos["<%= todo.date %>"]) todos["<%= todo.date %>"] = [];
+          todos["<%= todo.date %>"].push(`<%- todo.content %>`);
+        <% } %>
+        let now = new Date();
+        let calYear = now.getFullYear();
+        let calMonth = now.getMonth();
+
+        function renderCalendar() {
+          document.getElementById('calendar').innerHTML = getCalendar(calYear, calMonth, todos);
+          document.getElementById('monthLabel').textContent = getMonthLabel(calYear, calMonth);
+        }
+
+        document.getElementById('prevMonth').onclick = function() {
+          calMonth--;
+          if (calMonth < 0) {
+            calMonth = 11;
+            calYear--;
+          }
+          renderCalendar();
+        };
+        document.getElementById('nextMonth').onclick = function() {
+          calMonth++;
+          if (calMonth > 11) {
+            calMonth = 0;
+            calYear++;
+          }
+          renderCalendar();
+        };
+
+        renderCalendar();
+      </script>
+    </div>
   </body>
 </html>
